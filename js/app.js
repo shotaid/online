@@ -8,59 +8,71 @@ let lookupDebounceTimer = null;
 let checkoutResetTimer = null;
 let lastResolvedNip = "";
 
-// Inisialisasi saat halaman dimuat
-document.addEventListener("DOMContentLoaded", async () => {
-  document.getElementById("footerYear").textContent = new Date().getFullYear();
-  document.getElementById("appsScriptCodeBox").value = APPS_SCRIPT_TEMPLATE;
-
-  updateSyncBadge();
-  startLiveClock();
-
-  // Muat data awal dari Cloud / Lokal
-  const result = await DataService.fetchAllRecords();
-  attendanceRecords = result.records;
-  updateSyncBadge(result.source);
-
-  // Pulihkan NIP terakhir hanya jika shift-nya masih aktif (belum Check Out)
-  const lastNip = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP);
-  if (lastNip) {
-    const todayStr = getTodayDateISO();
-    const stillWorking = attendanceRecords.find(
-      r => String(r.nip) === String(lastNip) && r.date === todayStr && r.status === "Sedang Bekerja"
-    );
-    if (stillWorking) {
-      document.getElementById("inputNip").value = lastNip;
-      evaluateNipStatus(lastNip);
-    } else {
-      localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP);
-    }
-  }
-});
-
-// ==================== JAM DIGITAL & TIMER SHIFT REAL-TIME ====================
+// Jalankan jam digital seketika agar tidak bergantung pada proses jaringan
 function startLiveClock() {
+  const clockEl = document.getElementById("liveClock");
+  const dateEl = document.getElementById("liveDate");
+
   const tick = () => {
     const now = new Date();
-    document.getElementById("liveClock").textContent = now.toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false
-    }).replace(/\./g, ":");
-
-    document.getElementById("liveDate").textContent = now.toLocaleDateString("id-ID", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    });
-
+    if (clockEl) {
+      const h = String(now.getHours()).padStart(2, "0");
+      const m = String(now.getMinutes()).padStart(2, "0");
+      const s = String(now.getSeconds()).padStart(2, "0");
+      clockEl.textContent = `${h}:${m}:${s}`;
+    }
+    if (dateEl) {
+      dateEl.textContent = now.toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+    }
     updateActiveShiftTimer();
   };
+
   tick();
   setInterval(tick, 1000);
 }
 
+// Mulai jam langsung
+startLiveClock();
+
+// Inisialisasi data saat halaman siap
+document.addEventListener("DOMContentLoaded", async () => {
+  const footerYearEl = document.getElementById("footerYear");
+  if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
+
+  const codeBoxEl = document.getElementById("appsScriptCodeBox");
+  if (codeBoxEl && typeof APPS_SCRIPT_TEMPLATE !== "undefined") {
+    codeBoxEl.value = APPS_SCRIPT_TEMPLATE;
+  }
+
+  updateSyncBadge();
+
+  if (typeof DataService !== "undefined") {
+    const result = await DataService.fetchAllRecords();
+    attendanceRecords = result.records || [];
+    updateSyncBadge(result.source);
+
+    const lastNip = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP);
+    if (lastNip) {
+      const todayStr = getTodayDateISO();
+      const stillWorking = attendanceRecords.find(
+        r => String(r.nip) === String(lastNip) && r.date === todayStr && r.status === "Sedang Bekerja"
+      );
+      if (stillWorking) {
+        document.getElementById("inputNip").value = lastNip;
+        evaluateNipStatus(lastNip);
+      } else {
+        localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP);
+      }
+    }
+  }
+});
+
+// ==================== TIMER SHIFT REAL-TIME ====================
 function updateActiveShiftTimer() {
   if (!activeShiftRecord) return;
 
@@ -74,12 +86,14 @@ function updateActiveShiftTimer() {
 
   document.getElementById("liveDurationTimer").textContent = `${hrs}:${mins}:${secs}`;
 
-  const overtimeMinutes = Math.max(0, totalMinutes - APP_CONFIG.STANDARD_WORK_MINUTES);
+  const standardMins = (typeof APP_CONFIG !== "undefined") ? APP_CONFIG.STANDARD_WORK_MINUTES : 540;
+  const overtimeMinutes = Math.max(0, totalMinutes - standardMins);
   document.getElementById("liveOvertimeTimer").textContent = formatMinutesToHm(overtimeMinutes);
 
-  const progressPct = Math.min(100, Math.round((totalMinutes / APP_CONFIG.STANDARD_WORK_MINUTES) * 100));
+  const progressPct = Math.min(100, Math.round((totalMinutes / standardMins) * 100));
   const progressBar = document.getElementById("shiftProgressBar");
-  document.getElementById("shiftProgressPercent").textContent = `${progressPct}\%`; progressBar.style.width = `${progressPct}%`;
+  document.getElementById("shiftProgressPercent").textContent = `${progressPct}%`;
+  progressBar.style.width = `${progressPct}%`;
 
   if (overtimeMinutes > 0) {
     progressBar.classList.remove("bg-[#003D79]");
@@ -98,7 +112,6 @@ function handleNipLookup() {
   const nip = document.getElementById("inputNip").value.trim();
   const inputNamaEl = document.getElementById("inputNama");
 
-  // Bersihkan nama lama jika NIP berubah ke nomor yang berbeda
   if (nip !== lastResolvedNip) {
     inputNamaEl.value = "";
     lastResolvedNip = nip;
@@ -111,12 +124,11 @@ function handleNipLookup() {
 
   evaluateNipStatus(nip);
 
-  // Sinkronisasi ringan di latar belakang jika terhubung ke Google Sheets
-  if (DataService.getActiveSheetUrl()) {
+  if (typeof DataService !== "undefined" && DataService.getActiveSheetUrl()) {
     document.getElementById("nipLookupSpinner").classList.remove("hidden");
     lookupDebounceTimer = setTimeout(async () => {
       const res = await DataService.fetchAllRecords();
-      attendanceRecords = res.records;
+      attendanceRecords = res.records || [];
       updateSyncBadge(res.source);
       evaluateNipStatus(document.getElementById("inputNip").value.trim());
       document.getElementById("nipLookupSpinner").classList.add("hidden");
@@ -130,19 +142,16 @@ function evaluateNipStatus(nip) {
   const todayStr = getTodayDateISO();
   const inputNamaEl = document.getElementById("inputNama");
 
-  // Isi nama otomatis dari riwayat jika ditemukan NIP yang sama
   const historyMatch = [...attendanceRecords].reverse().find(r => String(r.nip) === String(nip));
   if (historyMatch && !inputNamaEl.value.trim()) {
     inputNamaEl.value = historyMatch.name;
     lastResolvedNip = nip;
   }
 
-  // Cari sesi yang masih aktif ("Sedang Bekerja") hari ini
   const activeToday = attendanceRecords.find(
     r => String(r.nip) === String(nip) && r.date === todayStr && r.status === "Sedang Bekerja"
   );
 
-  // Cari sesi terakhir yang sudah selesai hari ini (jika ada)
   const completedToday = [...attendanceRecords].reverse().find(
     r => String(r.nip) === String(nip) && r.date === todayStr && r.status === "Selesai"
   );
@@ -214,11 +223,7 @@ async function processAttendance(type) {
 
   const now = new Date();
   const nowTs = now.getTime();
-  const timeFormatted = now.toLocaleTimeString("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).replace(/\./g, ":");
+  const timeFormatted = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
   const todayStr = getTodayDateISO();
 
   if (type === "checkin") {
@@ -280,7 +285,6 @@ async function processAttendance(type) {
 
     await DataService.pushRecord(record);
 
-    // Kosongkan NIP & Nama setelah 2,5 detik agar siap untuk input berikutnya
     clearTimeout(checkoutResetTimer);
     checkoutResetTimer = setTimeout(() => {
       clearEmployeeForm();
@@ -344,7 +348,7 @@ async function syncFromCloud(showNotification = true) {
   if (icon) icon.classList.add("fa-spin");
 
   const result = await DataService.fetchAllRecords();
-  attendanceRecords = result.records;
+  attendanceRecords = result.records || [];
   updateSyncBadge(result.source);
   renderAdminTable();
 
@@ -420,4 +424,194 @@ function renderAdminTable() {
     return `
       <tr class="hover:bg-slate-50 transition">
         <td class="py-3 px-4 font-mono text-xs text-slate-600 whitespace-nowrap">${rec.date}</td>
-        <td class="py-3 px-4 font-mono font-bold text-[#0
+        <td class="py-3 px-4 font-mono font-bold text-[#002855] whitespace-nowrap">${escapeHtml(rec.nip)}</td>
+        <td class="py-3 px-4 font-semibold text-slate-800 whitespace-nowrap">${escapeHtml(rec.name)}</td>
+        <td class="py-3 px-4 font-mono text-xs whitespace-nowrap">${rec.checkInTime}</td>
+        <td class="py-3 px-4 font-mono text-xs whitespace-nowrap">${rec.checkOutTime || "-"}</td>
+        <td class="py-3 px-4 font-medium whitespace-nowrap">${formatMinutesToHm(durMins)}</td>
+        <td class="py-3 px-4 whitespace-nowrap">${otBadge}</td>
+        <td class="py-3 px-4 whitespace-nowrap">${statusBadge}</td>
+        <td class="py-3 px-4 text-center whitespace-nowrap">
+          <button onclick="deleteRecord('${rec.id}')" title="Hapus catatan" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+function resetAdminFilter() {
+  document.getElementById("adminSearchInput").value = "";
+  document.getElementById("adminDateFilter").value = "";
+  renderAdminTable();
+}
+
+async function deleteRecord(id) {
+  if (!confirm("Hapus catatan absensi ini?")) return;
+
+  attendanceRecords = attendanceRecords.filter(r => String(r.id) !== String(id));
+  DataService.saveLocalRecords(attendanceRecords);
+  renderAdminTable();
+  showToast("Catatan berhasil dihapus.", "success");
+
+  await DataService.deleteRecordCloud(id);
+}
+
+// ==================== EKSPOR EXCEL & CSV ====================
+function exportData(format) {
+  const filtered = getFilteredRecords();
+  if (filtered.length === 0) {
+    showToast("Tidak ada data untuk diekspor.", "warning");
+    return;
+  }
+
+  const rows = filtered.map((rec, index) => {
+    let durMins = rec.durationMinutes;
+    let otMins = rec.overtimeMinutes;
+    if (rec.status === "Sedang Bekerja") {
+      durMins = Math.max(0, Math.floor((Date.now() - rec.checkInTs) / 60000));
+      otMins = Math.max(0, durMins - APP_CONFIG.STANDARD_WORK_MINUTES);
+    }
+
+    return {
+      "No": index + 1,
+      "Tanggal": rec.date,
+      "NIP": rec.nip,
+      "Nama Lengkap": rec.name,
+      "Check In": rec.checkInTime,
+      "Check Out": rec.checkOutTime || "-",
+      "Total Durasi": formatMinutesToHm(durMins),
+      "Durasi (Menit)": durMins,
+      "Lembur": formatMinutesToHm(otMins),
+      "Lembur (Menit)": otMins,
+      "Status": rec.status
+    };
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Absensi");
+
+  const fileStamp = getTodayDateISO();
+  if (format === "csv") {
+    XLSX.writeFile(workbook, `Rekap_Absensi_${fileStamp}.csv`, { bookType: "csv" });
+  } else {
+    XLSX.writeFile(workbook, `Rekap_Absensi_${fileStamp}.xlsx`);
+  }
+  showToast(`File ${format.toUpperCase()} berhasil diunduh.`, "success");
+}
+
+// ==================== MODAL KONFIGURASI GOOGLE SHEETS ====================
+function openSheetModal() {
+  document.getElementById("sheetUrlInput").value = DataService.getActiveSheetUrl();
+  document.getElementById("sheetConfigModal").classList.remove("hidden");
+}
+
+function closeSheetModal() {
+  document.getElementById("sheetConfigModal").classList.add("hidden");
+}
+
+function copyAppsScriptCode() {
+  const box = document.getElementById("appsScriptCodeBox");
+  box.select();
+  navigator.clipboard.writeText(box.value);
+  showToast("Kode Code.gs berhasil disalin.", "success");
+}
+
+async function saveAndTestSheetUrl() {
+  const url = document.getElementById("sheetUrlInput").value.trim();
+  if (url && !url.startsWith("https://script.google.com/")) {
+    showToast("URL harus diawali https://script.google.com/", "error");
+    return;
+  }
+
+  DataService.setSheetUrl(url);
+  if (!url) {
+    updateSyncBadge("local");
+    closeSheetModal();
+    showToast("URL dihapus. Beralih ke mode lokal.", "warning");
+    return;
+  }
+
+  showToast("Menguji koneksi ke Google Sheets...", "info");
+  const result = await DataService.fetchAllRecords();
+  attendanceRecords = result.records || [];
+  updateSyncBadge(result.source);
+  renderAdminTable();
+
+  if (result.source === "cloud") {
+    closeSheetModal();
+    showToast("Berhasil terhubung ke Google Sheets!", "success");
+  } else {
+    showToast("URL tersimpan, namun gagal membaca data. Pastikan akses Web App disetel ke 'Anyone'.", "warning");
+  }
+}
+
+function updateSyncBadge(sourceState) {
+  const dot = document.getElementById("syncDot");
+  const text = document.getElementById("syncText");
+  if (!dot || !text) return;
+
+  const hasUrl = (typeof DataService !== "undefined") && Boolean(DataService.getActiveSheetUrl());
+
+  if (!hasUrl) {
+    dot.className = "w-2 h-2 rounded-full bg-amber-400";
+    text.textContent = "Mode Lokal";
+    return;
+  }
+
+  if (sourceState === "offline-cache") {
+    dot.className = "w-2 h-2 rounded-full bg-orange-400";
+    text.textContent = "Cache Offline";
+  } else {
+    dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+    text.textContent = "Cloud Sync Aktif";
+  }
+}
+
+// ==================== HELPER UTILITIES ====================
+function getTodayDateISO() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatMinutesToHm(totalMins) {
+  const mins = Math.max(0, Math.floor(totalMins));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h}j ${m}m`;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function showToast(message, type = "info") {
+  const container = document.getElementById("toastContainer");
+  if (!container) return;
+
+  const colors = {
+    success: "bg-emerald-600 text-white",
+    error: "bg-red-600 text-white",
+    warning: "bg-amber-500 text-slate-950",
+    info: "bg-[#002855] text-white"
+  };
+
+  const toast = document.createElement("div");
+  toast.className = `toast-enter pointer-events-auto px-4 py-3 rounded-xl shadow-lg text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 ${colors[type] || colors.info}`;
+  toast.innerHTML = `<span>${escapeHtml(message)}</span>`;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 0.25s ease";
+    setTimeout(() => toast.remove(), 250);
+  }, 3200);
+}
