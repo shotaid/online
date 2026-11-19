@@ -22,7 +22,7 @@ body {
 /* Header Korporat */
 .mandiri-header {
   background: linear-gradient(135deg, var(--mandiri-deep) 0%, var(--mandiri-navy) 100%);
-  padding-top: env(safe-area-inset-top);
+  padding-top: max(12px, env(safe-area-inset-top));
 }
 
 .mandiri-ribbon-slash {
