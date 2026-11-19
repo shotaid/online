@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#002855" />
+  <title>PresensiPro — Sistem Absensi & Lembur Online</title>
+
+  <!-- Tailwind CSS & Font Awesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- SheetJS untuk Ekspor Excel (.xlsx) & CSV -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- HEADER KORPORAT -->
+  <header class="mandiri-header text-white sticky top-0 z-40 shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('employee')">
+        <div class="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center relative overflow-hidden">
+          <div class="mandiri-ribbon-slash"></div>
+          <i class="fa-solid fa-fingerprint text-[#FFB700] text-lg relative z-10"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-extrabold text-base sm:text-lg tracking-tight leading-none">Presensi<span class="text-[#FFB700]">Pro</span></h1>
+            <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FFB700]/20 text-[#FFB700] border border-[#FFB700]/30">Enterprise</span>
+          </div>
+          <p class="text-[11px] text-blue-200 mt-0.5">Sistem Kehadiran & Kalkulasi Lembur</p>
+        </div>
+      </div>
+
+      <!-- Right Navigation Controls -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Indikator Status Cloud Sync -->
+        <div id="syncBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/15">
+          <span id="syncDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+          <span id="syncText" class="hidden sm:inline text-blue-100">Mode Lokal</span>
+        </div>
+
+        <!-- Tombol Kembali ke Halaman Utama (Muncul saat di Dashboard Admin) -->
+        <button id="headerBackHomeBtn" onclick="switchView('employee')" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FFB700] hover:bg-amber-400 text-[#002855] font-bold text-xs sm:text-sm shadow transition active:scale-95">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Halaman Utama</span>
+        </button>
+
+        <!-- Tombol Akses Admin -->
+        <button id="adminNavBtn" onclick="openAdminGate()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs sm:text-sm transition active:scale-95">
+          <i class="fa-solid fa-user-shield text-[#FFB700]"></i>
+          <span class="hidden sm:inline">Admin</span>
+        </button>
+      </div>
+    </div>
+    <!-- Pita Aksen Emas-Biru -->
+    <div class="mandiri-accent-bar"></div>
+  </header>
+
+  <!-- KONTEN UTAMA -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+    <!-- ==================== HALAMAN PEGAWAI (CHECK IN / CHECK OUT) ==================== -->
+    <section id="employeeView" class="max-w-xl mx-auto space-y-5">
+      
+      <!-- Banner Jam Digital Real-Time -->
+      <div class="mandiri-clock-card rounded-2xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
+        <div class="mandiri-wave-bg"></div>
+        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p class="text-xs uppercase tracking-widest text-[#FFB700] font-bold mb-1">Waktu Server (WIB)</p>
+            <div id="liveClock" class="font-mono text-3xl sm:text-4xl font-bold tracking-tight">00:00:00</div>
+            <p id="liveDate" class="text-xs sm:text-sm text-blue-100 mt-1">Memuat tanggal...</p>
+          </div>
+          <div class="bg-white/10 backdrop-blur-sm border border-white/15 rounded-xl px-4 py-2.5 self-start sm:self-center">
+            <div class="text-[11px] text-blue-200">Standar Kerja Harian</div>
+            <div class="font-bold text-sm text-[#FFB700]">09 Jam 00 Menit</div>
+            <div class="text-[11px] text-blue-200 mt-0.5">Selebihnya dihitung lembur</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kartu Form Presensi -->
+      <div class="bg-white rounded-2xl shadow-md border border-slate-200/80 p-5 sm:p-7 space-y-5">
+        <div class="border-b border-slate-100 pb-4">
+          <h2 class="text-lg sm:text-xl font-bold text-[#002855]">Formulir Presensi Kehadiran</h2>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Masukkan NIP untuk memuat status shift otomatis hari ini.</p>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Input NIP -->
+          <div>
+            <label for="inputNip" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              Nomor Induk Pegawai (NIP) <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-id-badge"></i>
+              </span>
+              <input
+                type="text"
+                id="inputNip"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="Contoh: 1995081701"
+                oninput="handleNipLookup()"
+                class="w-full pl-10 pr-10 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-mono font-semibold text-slate-800 transition"
+              />
+              <span id="nipLookupSpinner" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#003D79]">
+                <i class="fa-solid fa-circle-notch fa-spin"></i>
+              </span>
+            </div>
+          </div>
+
+          <!-- Input Nama Lengkap -->
+          <div>
+            <label for="inputNama" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
+              Nama Lengkap <span class="text-red-500">*</span>
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                <i class="fa-solid fa-user"></i>
+              </span>
+              <input
+                type="text"
+                id="inputNama"
+                autocomplete="name"
+                placeholder="Masukkan nama lengkap Anda"
+                class="w-full pl-10 pr-4 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-medium text-slate-800 transition"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Status Shift Aktif / Selesai (Dinamis) -->
+        <div id="shiftStatusCard" class="hidden rounded-xl border p-4 space-y-3 transition-all">
+          <div class="flex items-center justify-between gap-2">
+            <span id="shiftBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"></span>
+            <span class="text-xs text-slate-500 font-medium">Check-In: <strong id="displayCheckInTime" class="font-mono text-slate-800">--:--</strong></span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 pt-1">
+            <div class="bg-white/80 rounded-lg p-3 border border-slate-200/70">
+              <div class="text-[11px] font-semibold text-slate-500 uppercase">Durasi Berjalan</div>
+              <div id="liveDurationTimer" class="font-mono text-lg sm:text-xl font-bold text-[#002855] mt-0.5">00:00:00</div>
+            </div>
+            <div class="bg-white/80 rounded-lg p-3 border border-slate-200/70">
+              <div class="text-[11px] font-semibold text-slate-500 uppercase">Estimasi Lembur</div>
+              <div id="liveOvertimeTimer" class="font-mono text-lg sm:text-xl font-bold text-amber-600 mt-0.5">0j 0m</div>
+            </div>
+          </div>
+
+          <!-- Progress Bar Target 9 Jam -->
+          <div>
+            <div class="flex justify-between text-[11px] font-semibold text-slate-500 mb-1">
+              <span>Progres Wajib (9 Jam)</span>
+              <span id="shiftProgressPercent">0%</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+              <div id="shiftProgressBar" class="h-full bg-[#003D79] rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tombol Aksi Check In & Check Out -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <button
+            id="btnCheckIn"
+            onclick="processAttendance('checkin')"
+            class="btn-mandiri-primary py-3.5 px-5 rounded-xl font-bold text-sm sm:text-base text-white shadow-md flex items-center justify-center gap-2 transition active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <i class="fa-solid fa-right-to-bracket text-[#FFB700]"></i>
+            <span>Check In</span>
+          </button>
+
+          <button
+            id="btnCheckOut"
+            onclick="processAttendance('checkout')"
+            disabled
+            class="btn-mandiri-gold py-3.5 px-5 rounded-xl font-bold text-sm sm:text-base text-[#002855] shadow-md flex items-center justify-center gap-2 transition active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
+          >
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Check Out</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Catatan Informasi Perangkat -->
+      <div class="text-center text-xs text-slate-500 px-2">
+        <i class="fa-solid fa-shield-halved text-[#003D79] mr-1"></i>
+        Timer shift tersimpan otomatis di awan meski aplikasi ditutup. Kompatibel di Desktop, Android & iOS.
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN DASHBOARD ADMIN ==================== -->
+    <section id="adminView" class="hidden space-y-6">
+      
+      <!-- Top Bar Admin -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-3">
+          <button onclick="switchView('employee')" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#002855] font-bold text-xs sm:text-sm flex items-center gap-1.5 transition shrink-0">
+            <i class="fa-solid fa-arrow-left"></i>
+            <span>Kembali</span>
+          </button>
+          <div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-[#002855]">Dashboard Rekapitulasi Absensi</h2>
+            <p class="text-xs text-slate-500">Pemantauan waktu kerja (9 jam/hari), lembur, dan ekspor laporan.</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="syncFromCloud(true)" class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003D79] border border-blue-200 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+            <i id="refreshIcon" class="fa-solid fa-arrows-rotate"></i>
+            <span>Refresh Data</span>
+          </button>
+          <button onclick="openSheetModal()" class="px-3.5 py-2 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-table text-[#FFB700]"></i>
+            <span>Sync Google Sheets</span>
+          </button>
+          <button onclick="exportData('xlsx')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Excel (.xlsx)</span>
+          </button>
+          <button onclick="exportData('csv')" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-file-csv"></i>
+            <span>CSV</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Kartu Ringkasan KPI -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 border-t-4 border-t-[#003D79]">
+          <div class="text-xs font-semibold text-slate-500 uppercase">Total Catatan</div>
+          <div id="kpiTotal" class="text-2xl sm:text-3xl font-extrabold text-[#002855] mt-1">0</div>
+          <div class="text-[11px] text-slate-400 mt-1">Sesuai filter aktif</div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 border-t-4 border-t-[#0072CE]">
+          <div class="text-xs font-semibold text-slate-500 uppercase">Sedang Bekerja</div>
+          <div id="kpiWorking" class="text-2xl sm:text-3xl font-extrabold text-[#0072CE] mt-1">0</div>
+          <div class="text-[11px] text-slate-400 mt-1">Belum Check Out</div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 border-t-4 border-t-emerald-500">
+          <div class="text-xs font-semibold text-slate-500 uppercase">Selesai Shift</div>
+          <div id="kpiCompleted" class="text-2xl sm:text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+          <div class="text-[11px] text-slate-400 mt-1">Sudah Check Out</div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 border-t-4 border-t-[#FFB700]">
+          <div class="text-xs font-semibold text-slate-500 uppercase">Total Lembur</div>
+          <div id="kpiOvertime" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">0j 0m</div>
+          <div class="text-[11px] text-slate-400 mt-1">Akumulasi kelebihan 9 jam</div>
+        </div>
+      </div>
+
+      <!-- Filter & Tabel Data -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row gap-3 justify-between bg-slate-50/70">
+          <div class="relative flex-1 max-w-md">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </span>
+            <input
+              type="text"
+              id="adminSearchInput"
+              oninput="renderAdminTable()"
+              placeholder="Cari berdasarkan NIP atau Nama..."
+              class="w-full pl-10 pr-4 py-2.5 text-base sm:text-sm rounded-xl border border-slate-300 focus:border-[#003D79] outline-none bg-white"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <input
+              type="date"
+              id="adminDateFilter"
+              onchange="renderAdminTable()"
+              class="px-3.5 py-2.5 text-base sm:text-sm rounded-xl border border-slate-300 focus:border-[#003D79] outline-none bg-white"
+            />
+            <button onclick="resetAdminFilter()" class="px-3 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-600">
+              Semua Tanggal
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-[#002855] text-white text-xs uppercase tracking-wider">
+                <th class="py-3.5 px-4 font-semibold">Tanggal</th>
+                <th class="py-3.5 px-4 font-semibold">NIP</th>
+                <th class="py-3.5 px-4 font-semibold">Nama Lengkap</th>
+                <th class="py-3.5 px-4 font-semibold">Check In</th>
+                <th class="py-3.5 px-4 font-semibold">Check Out</th>
+                <th class="py-3.5 px-4 font-semibold">Durasi Kerja</th>
+                <th class="py-3.5 px-4 font-semibold">Lembur</th>
+                <th class="py-3.5 px-4 font-semibold">Status</th>
+                <th class="py-3.5 px-4 font-semibold text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody" class="divide-y divide-slate-200 text-sm">
+              <!-- Diisi via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-white border-t border-slate-200 py-4 px-4 mt-auto">
+    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <div>&copy; <span id="footerYear"></span> <strong>PresensiPro</strong>. Sistem Absensi Online.</div>
+      <div class="font-medium text-slate-600">Dikembangkan oleh <span class="font-bold text-[#003D79]">Rangga Wijaya</span> dengan ❤️</div>
+    </div>
+  </footer>
+
+  <!-- ==================== MODAL PIN ADMIN ==================== -->
+  <div id="adminPinModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-[#003D79] text-[#FFB700] flex items-center justify-center">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h3 class="font-bold text-base text-[#002855]">Akses Dashboard Admin</h3>
+        </div>
+        <button onclick="closeAdminGate()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+      <p class="text-xs text-slate-500">Masukkan PIN Admin untuk melihat seluruh catatan kehadiran dan laporan lembur.</p>
+      <input
+        type="password"
+        id="adminPinInput"
+        inputmode="numeric"
+        maxlength="6"
+        placeholder="••••••"
+        onkeydown="if(event.key==='Enter') verifyAdminPin()"
+        class="w-full text-center tracking-[0.5em] font-mono text-xl py-3 rounded-xl border border-slate-300 focus:border-[#003D79] outline-none"
+      />
+      <div class="flex gap-2 pt-1">
+        <button onclick="closeAdminGate()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+        <button onclick="verifyAdminPin()" class="flex-1 py-2.5 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white text-sm font-bold">Masuk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL KONFIGURASI GOOGLE SHEETS ==================== -->
+  <div id="sheetConfigModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-8">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center">
+            <i class="fa-solid fa-table"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-[#002855]">Integrasi Google Sheets (Apps Script)</h3>
+            <p class="text-xs text-slate-500">Sinkronisasi real-time lintas perangkat ke tab sheet <strong>Absensi</strong></p>
+          </div>
+        </div>
+        <button onclick="closeSheetModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase text-slate-600">URL Web App Google Apps Script</label>
+        <input
+          type="url"
+          id="sheetUrlInput"
+          placeholder="https://script.google.com/macros/s/AKfycb.../exec"
+          class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:border-[#003D79] font-mono outline-none"
+        />
+        <p class="text-[11px] text-slate-500">Untuk pemakaian permanen seluruh HP pegawai tanpa input manual, tempel URL ini ke variabel <code class="bg-slate-100 px-1 rounded">DEFAULT_APPS_SCRIPT_URL</code> di file <code class="bg-slate-100 px-1 rounded">js/config.js</code>.</p>
+      </div>
+
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold uppercase text-slate-600">Kode Google Apps Script (Code.gs)</label>
+          <button onclick="copyAppsScriptCode()" class="text-xs font-bold text-[#003D79] hover:underline flex items-center gap-1">
+            <i class="fa-regular fa-copy"></i> Salin Kode
+          </button>
+        </div>
+        <textarea id="appsScriptCodeBox" readonly rows="8" class="w-full p-3 rounded-xl bg-slate-900 text-emerald-300 font-mono text-xs leading-relaxed outline-none"></textarea>
+      </div>
+
+      <div class="flex flex-wrap justify-end gap-2 pt-2">
+        <button onclick="closeSheetModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50">Tutup</button>
+        <button onclick="saveAndTestSheetUrl()" class="px-5 py-2.5 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white text-xs sm:text-sm font-bold flex items-center gap-2">
+          <i class="fa-solid fa-plug-circle-check text-[#FFB700]"></i>
+          <span>Simpan & Tes Koneksi</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+  <!-- MODULAR JAVASCRIPT (URUTAN WAJIB: config -> api -> app) -->
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
