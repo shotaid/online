@@ -4,7 +4,7 @@
 
 const APP_CONFIG = {
   // Ganti teks di bawah dengan URL Web App Google Apps Script Anda agar semua HP langsung terhubung
-  DEFAULT_APPS_SCRIPT_URL: "PASTE_YOUR_WEB_APP_URL_HERE",
+  DEFAULT_APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzojHsL-HKknkiUdO5FL2OL1rFJ4OuWQANnTzpgMQIrrNQEyH4TXd9HXe7r9skG37c-/exec",
 
   // PIN Default untuk masuk ke Dashboard Admin
   ADMIN_PIN: "123456",
