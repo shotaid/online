@@ -1,0 +1,89 @@
+/* ==========================================================================
+   PresensiPro — Tema Korporat Bank Mandiri & Optimalisasi Mobile
+   ========================================================================== */
+
+:root {
+  --mandiri-navy: #003D79;
+  --mandiri-deep: #002855;
+  --mandiri-gold: #FFB700;
+  --mandiri-sky: #0072CE;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  padding-bottom: env(safe-area-inset-bottom);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Header Korporat */
+.mandiri-header {
+  background: linear-gradient(135deg, var(--mandiri-deep) 0%, var(--mandiri-navy) 100%);
+  padding-top: env(safe-area-inset-top);
+}
+
+.mandiri-ribbon-slash {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(125deg, transparent 40%, rgba(255, 183, 0, 0.22) 55%, rgba(0, 114, 206, 0.3) 75%, transparent 90%);
+}
+
+.mandiri-accent-bar {
+  height: 4px;
+  background: linear-gradient(90deg, var(--mandiri-gold) 0%, #FFD24C 45%, var(--mandiri-sky) 100%);
+}
+
+/* Kartu Jam Digital */
+.mandiri-clock-card {
+  background: linear-gradient(135deg, var(--mandiri-deep) 0%, var(--mandiri-navy) 65%, #004E9A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mandiri-wave-bg {
+  position: absolute;
+  right: -40px;
+  bottom: -60px;
+  width: 240px;
+  height: 240px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(255, 183, 0, 0.25) 0%, rgba(0, 114, 206, 0.08) 60%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Tombol Aksi Utama */
+.btn-mandiri-primary {
+  background: linear-gradient(135deg, var(--mandiri-navy) 0%, var(--mandiri-deep) 100%);
+  border-bottom: 3px solid var(--mandiri-gold);
+}
+
+.btn-mandiri-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #004A94 0%, var(--mandiri-navy) 100%);
+}
+
+.btn-mandiri-gold {
+  background: linear-gradient(135deg, #FFC425 0%, var(--mandiri-gold) 100%);
+  border-bottom: 3px solid #D99B00;
+}
+
+.btn-mandiri-gold:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FFD04D 0%, #FFC11E 100%);
+}
+
+/* Animasi Toast */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-enter {
+  animation: slideUpFade 0.25s ease-out forwards;
+}
