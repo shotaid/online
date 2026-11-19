@@ -364,13 +364,17 @@ function clearEmployeeForm() {
 async function processAttendance(type) {
   if (isProcessingAttendance) return;
 
-  const nipEl = document.getElementById("inputNip");
-  const namaEl = document.getElementById("inputNama");
-  const nip = nipEl ? nipEl.value.trim() : "";
-  const name = namaEl ? namaEl.value.trim() : "";
+  // Baca input secara menyeluruh (mendukung autofill browser HP & fallback selector)
+  const nipEl = document.getElementById("inputNip") || document.querySelector('input[inputmode="numeric"]');
+  const namaEl = document.getElementById("inputNama") || document.querySelector('input[autocomplete="name"]');
+
+  const nip = nipEl ? String(nipEl.value || nipEl.getAttribute("value") || "").replace(/\s+/g, " ").trim() : "";
+  const name = namaEl ? String(namaEl.value || namaEl.getAttribute("value") || "").replace(/\s+/g, " ").trim() : "";
 
   if (!nip || !name) {
     showToast("NIP dan Nama Lengkap wajib diisi.", "error");
+    if (!nip && nipEl) nipEl.focus();
+    else if (!name && namaEl) namaEl.focus();
     return;
   }
 
