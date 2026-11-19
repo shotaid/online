@@ -108,15 +108,13 @@
                 <i class="fa-solid fa-id-badge"></i>
               </span>
               <input
-                type="text"
-                id="inputNip"
-                inputmode="numeric"
-                autocomplete="off"
-                oninput="handleNameLookup()"
-                placeholder="Contoh: 1995081701"
-                oninput="handleNipLookup()"
-                class="w-full pl-10 pr-10 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-mono font-semibold text-slate-800 transition"
-              />
+  type="text"
+  id="inputNama"
+  autocomplete="name"
+  oninput="handleNameLookup()"
+  placeholder="Masukkan nama lengkap Anda"
+  class="w-full pl-10 pr-4 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-medium text-slate-800 transition"
+/>
               <span id="nipLookupSpinner" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#003D79]">
                 <i class="fa-solid fa-circle-notch fa-spin"></i>
               </span>
