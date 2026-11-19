@@ -1,12 +1,12 @@
 /* ==========================================================================
-   PresensiPro — Logika Antarmuka, Timer Shift, & Sinkronisasi Lintas Device
+   PresensiPro — Logika Antarmuka, Timer Shift, & Deteksi Lintas Device (NIP/Nama)
    ========================================================================== */
 
 let attendanceRecords = [];
 let activeShiftRecord = null;
 let lookupDebounceTimer = null;
 let checkoutResetTimer = null;
-let lastResolvedNip = "";
+let lastResolvedKey = "";
 let lastNotifiedActiveId = "";
 
 // Jalankan jam digital seketika agar tidak bergantung pada proses jaringan
@@ -50,14 +50,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     codeBoxEl.value = APPS_SCRIPT_TEMPLATE;
   }
 
-  // Pastikan listener aktif pada input NIP & Nama untuk deteksi lintas perangkat
   const nipEl = document.getElementById("inputNip");
   const namaEl = document.getElementById("inputNama");
+
   if (nipEl) {
     nipEl.addEventListener("blur", () => triggerImmediateCloudLookup());
   }
   if (namaEl) {
-    namaEl.addEventListener("focus", () => triggerImmediateCloudLookup());
+    // Pasang listener otomatis meskipun belum ditambahkan manual di atribut HTML
+    namaEl.addEventListener("input", () => handleNameLookup());
+    namaEl.addEventListener("blur", () => triggerImmediateCloudLookup());
   }
 
   updateSyncBadge();
@@ -69,13 +71,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const lastNip = localStorage.getItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP);
     if (lastNip) {
-      const todayStr = getTodayDateISO();
       const stillWorking = attendanceRecords.find(
-        r => String(r.nip) === String(lastNip) && r.date === todayStr && r.status === "Sedang Bekerja"
+        r => String(r.nip).trim() === String(lastNip).trim() && r.status === "Sedang Bekerja"
       );
       if (stillWorking) {
         document.getElementById("inputNip").value = lastNip;
-        evaluateNipStatus(lastNip, true);
+        evaluateEmployeeStatus({ nip: lastNip, notifyIfActive: true, autoFillPair: true });
       } else {
         localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP);
       }
@@ -115,59 +116,84 @@ function updateActiveShiftTimer() {
   }
 }
 
-// ==================== DETEKSI OTOMATIS STATUS NIP LINTAS DEVICE ====================
+// ==================== DETEKSI LINTAS DEVICE VIA NIP MAUPUN NAMA ====================
 function handleNipLookup() {
   clearTimeout(checkoutResetTimer);
   clearTimeout(lookupDebounceTimer);
 
   const nip = document.getElementById("inputNip").value.trim();
-  const inputNamaEl = document.getElementById("inputNama");
+  const nama = document.getElementById("inputNama").value.trim();
 
-  if (nip !== lastResolvedNip) {
-    inputNamaEl.value = "";
-    lastResolvedNip = nip;
-    lastNotifiedActiveId = "";
-  }
-
-  if (!nip) {
+  if (!nip && !nama) {
+    lastResolvedKey = "";
     resetShiftPanel();
     return;
   }
 
-  // Evaluasi cepat dari cache yang sudah dimuat saat halaman dibuka
-  evaluateNipStatus(nip, true);
-
-  // Tarik data terbaru dari Google Sheets agar deteksi lintas device selalu akurat
-  if (typeof DataService !== "undefined" && DataService.getActiveSheetUrl()) {
-    document.getElementById("nipLookupSpinner").classList.remove("hidden");
-    lookupDebounceTimer = setTimeout(async () => {
-      await fetchAndApplyLatestNipStatus(nip);
-    }, 350);
+  // Jika NIP diganti manual setelah sebelumnya terisi otomatis, bersihkan nama lama agar tidak tertukar
+  if (lastResolvedKey && lastResolvedKey.startsWith("nip:") && lastResolvedKey !== `nip:${nip}`) {
+    document.getElementById("inputNama").value = "";
+    lastNotifiedActiveId = "";
   }
+
+  evaluateEmployeeStatus({ nip, name: document.getElementById("inputNama").value.trim(), notifyIfActive: true, autoFillPair: true });
+  scheduleCloudLookup();
+}
+
+function handleNameLookup() {
+  clearTimeout(checkoutResetTimer);
+  clearTimeout(lookupDebounceTimer);
+
+  const nip = document.getElementById("inputNip").value.trim();
+  const nama = document.getElementById("inputNama").value.trim();
+
+  if (!nip && !nama) {
+    lastResolvedKey = "";
+    resetShiftPanel();
+    return;
+  }
+
+  // Jika Nama diubah manual dan sebelumnya NIP terisi otomatis dari nama lain, bersihkan NIP lama
+  if (lastResolvedKey && lastResolvedKey.startsWith("name:") && lastResolvedKey !== `name:${nama.toLowerCase()}`) {
+    document.getElementById("inputNip").value = "";
+    lastNotifiedActiveId = "";
+  }
+
+  evaluateEmployeeStatus({ nip: document.getElementById("inputNip").value.trim(), name: nama, notifyIfActive: true, autoFillPair: true });
+  scheduleCloudLookup();
+}
+
+function scheduleCloudLookup() {
+  if (typeof DataService === "undefined" || !DataService.getActiveSheetUrl()) return;
+
+  const spinner = document.getElementById("nipLookupSpinner");
+  if (spinner) spinner.classList.remove("hidden");
+
+  lookupDebounceTimer = setTimeout(async () => {
+    await triggerImmediateCloudLookup();
+  }, 350);
 }
 
 async function triggerImmediateCloudLookup() {
   const nip = document.getElementById("inputNip").value.trim();
-  if (!nip) return;
+  const name = document.getElementById("inputNama").value.trim();
+  if (!nip && !name) return;
+
   if (typeof DataService !== "undefined" && DataService.getActiveSheetUrl()) {
-    document.getElementById("nipLookupSpinner").classList.remove("hidden");
-    await fetchAndApplyLatestNipStatus(nip);
-  }
-}
-
-async function fetchAndApplyLatestNipStatus(targetNip) {
-  try {
-    const res = await DataService.fetchAllRecords();
-    attendanceRecords = res.records || [];
-    updateSyncBadge(res.source);
-
-    const currentNip = document.getElementById("inputNip").value.trim();
-    if (currentNip === targetNip) {
-      evaluateNipStatus(currentNip, true);
-    }
-  } finally {
     const spinner = document.getElementById("nipLookupSpinner");
-    if (spinner) spinner.classList.add("hidden");
+    if (spinner) spinner.classList.remove("hidden");
+
+    try {
+      const res = await DataService.fetchAllRecords();
+      attendanceRecords = res.records || [];
+      updateSyncBadge(res.source);
+
+      const latestNip = document.getElementById("inputNip").value.trim();
+      const latestName = document.getElementById("inputNama").value.trim();
+      evaluateEmployeeStatus({ nip: latestNip, name: latestName, notifyIfActive: true, autoFillPair: true });
+    } finally {
+      if (spinner) spinner.classList.add("hidden");
+    }
   }
 }
 
@@ -177,7 +203,7 @@ function setActionButtonsState(mode) {
   if (!btnIn || !btnOut) return;
 
   if (mode === "working") {
-    // Tombol Check In menjadi abu-abu nonaktif; hanya tombol Check Out yang aktif
+    // Tombol Check In abu-abu nonaktif; hanya tombol Check Out yang aktif
     btnIn.disabled = true;
     btnIn.classList.remove("btn-mandiri-primary", "text-white");
     btnIn.classList.add("bg-slate-300", "text-slate-500", "border-b-2", "border-slate-400", "cursor-not-allowed");
@@ -186,7 +212,6 @@ function setActionButtonsState(mode) {
     btnOut.classList.remove("bg-slate-300", "text-slate-500", "cursor-not-allowed");
     btnOut.classList.add("btn-mandiri-gold", "text-[#002855]");
   } else {
-    // Mode siap Check In (belum absen atau sudah selesai shift sebelumnya)
     btnIn.disabled = false;
     btnIn.classList.remove("bg-slate-300", "text-slate-500", "border-b-2", "border-slate-400", "cursor-not-allowed");
     btnIn.classList.add("btn-mandiri-primary", "text-white");
@@ -197,50 +222,104 @@ function setActionButtonsState(mode) {
   }
 }
 
-function evaluateNipStatus(nip, notifyIfActive = false) {
-  if (!nip) return resetShiftPanel();
+function evaluateEmployeeStatus({ nip = "", name = "", notifyIfActive = false, autoFillPair = true } = {}) {
+  const cleanNip = String(nip).trim();
+  const cleanNameLower = String(name).trim().toLowerCase();
 
-  const todayStr = getTodayDateISO();
-  const inputNamaEl = document.getElementById("inputNama");
-
-  const historyMatch = [...attendanceRecords].reverse().find(r => String(r.nip) === String(nip));
-  if (historyMatch && !inputNamaEl.value.trim()) {
-    inputNamaEl.value = historyMatch.name;
-    lastResolvedNip = nip;
+  if (!cleanNip && !cleanNameLower) {
+    resetShiftPanel();
+    return;
   }
 
-  const activeToday = attendanceRecords.find(
-    r => String(r.nip) === String(nip) && r.date === todayStr && r.status === "Sedang Bekerja"
-  );
+  const inputNipEl = document.getElementById("inputNip");
+  const inputNamaEl = document.getElementById("inputNama");
+  const todayStr = getTodayDateISO();
 
-  const completedToday = [...attendanceRecords].reverse().find(
-    r => String(r.nip) === String(nip) && r.date === todayStr && r.status === "Selesai"
-  );
+  // 1. Cari sesi aktif ("Sedang Bekerja") baik lewat NIP maupun Nama (lintas device & lintas hari)
+  let activeSession = null;
+  if (cleanNip) {
+    activeSession = attendanceRecords.find(
+      r => String(r.nip).trim() === cleanNip && r.status === "Sedang Bekerja"
+    );
+  }
+  if (!activeSession && cleanNameLower.length >= 3) {
+    // Prioritaskan kecocokan nama persis terlebih dahulu, lalu kecocokan parsial unik
+    activeSession = attendanceRecords.find(
+      r => String(r.name).trim().toLowerCase() === cleanNameLower && r.status === "Sedang Bekerja"
+    );
+    if (!activeSession) {
+      const partialMatches = attendanceRecords.filter(
+        r => r.status === "Sedang Bekerja" && String(r.name).trim().toLowerCase().includes(cleanNameLower)
+      );
+      if (partialMatches.length === 1) {
+        activeSession = partialMatches[0];
+      }
+    }
+  }
+
+  // Auto-complete pasangan NIP / Nama dari riwayat jika belum ketemu sesi aktif
+  if (!activeSession && autoFillPair) {
+    if (cleanNip && !cleanNameLower) {
+      const histByNip = [...attendanceRecords].reverse().find(r => String(r.nip).trim() === cleanNip);
+      if (histByNip) {
+        inputNamaEl.value = histByNip.name;
+        lastResolvedKey = `nip:${cleanNip}`;
+      }
+    } else if (!cleanNip && cleanNameLower.length >= 3) {
+      const exactHistByName = [...attendanceRecords].reverse().find(
+        r => String(r.name).trim().toLowerCase() === cleanNameLower
+      );
+      if (exactHistByName) {
+        inputNipEl.value = exactHistByName.nip;
+        lastResolvedKey = `name:${cleanNameLower}`;
+      }
+    }
+  }
 
   const card = document.getElementById("shiftStatusCard");
   const badge = document.getElementById("shiftBadge");
 
   card.classList.remove("hidden", "bg-blue-50/70", "border-blue-200", "bg-amber-50/80", "border-amber-300", "bg-emerald-50/70", "border-emerald-200");
 
-  if (activeToday) {
-    activeShiftRecord = activeToday;
-    if (activeToday.name) inputNamaEl.value = activeToday.name;
-    document.getElementById("displayCheckInTime").textContent = activeToday.checkInTime;
+  // Kondisi A: Ditemukan sesi aktif yang BELUM CHECK OUT
+  if (activeSession) {
+    activeShiftRecord = activeSession;
+
+    if (autoFillPair) {
+      if (!cleanNip) {
+        inputNipEl.value = activeSession.nip;
+        lastResolvedKey = `name:${cleanNameLower}`;
+      }
+      if (!cleanNameLower || cleanNameLower !== String(activeSession.name).trim().toLowerCase()) {
+        inputNamaEl.value = activeSession.name;
+        if (cleanNip) lastResolvedKey = `nip:${cleanNip}`;
+      }
+    }
+
+    const dateNote = activeSession.date !== todayStr ? ` (${activeSession.date})` : "";
+    document.getElementById("displayCheckInTime").textContent = `${activeSession.checkInTime}${dateNote}`;
 
     card.classList.add("bg-amber-50/80", "border-amber-300");
     badge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500 text-slate-950";
-    badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Belum Check Out (Masuk ${activeToday.checkInTime})`;
+    badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Belum Check Out (Masuk ${activeSession.checkInTime}${dateNote})`;
 
     setActionButtonsState("working");
     updateActiveShiftTimer();
 
-    // Tampilkan pemberitahuan sekali untuk sesi aktif ini
-    if (notifyIfActive && lastNotifiedActiveId !== activeToday.id) {
-      lastNotifiedActiveId = activeToday.id;
-      showToast(`NIP ${nip} (${activeToday.name}) tercatat belum Check Out sejak pukul ${activeToday.checkInTime} WIB. Silakan tekan Check Out.`, "warning");
+    if (notifyIfActive && lastNotifiedActiveId !== activeSession.id) {
+      lastNotifiedActiveId = activeSession.id;
+      showToast(`Status Belum Check Out: ${activeSession.name} (${activeSession.nip}) sudah Check In pukul ${activeSession.checkInTime} WIB. Silakan tekan Check Out.`, "warning");
     }
     return;
   }
+
+  // Kondisi B: Cek apakah hari ini sudah menyelesaikan shift sebelumnya
+  const resolvedNipNow = inputNipEl.value.trim();
+  const completedToday = resolvedNipNow
+    ? [...attendanceRecords].reverse().find(
+        r => String(r.nip).trim() === resolvedNipNow && r.date === todayStr && r.status === "Selesai"
+      )
+    : null;
 
   if (completedToday) {
     activeShiftRecord = completedToday;
@@ -255,6 +334,7 @@ function evaluateNipStatus(nip, notifyIfActive = false) {
     return;
   }
 
+  // Kondisi C: Belum ada catatan aktif
   activeShiftRecord = null;
   card.classList.add("hidden");
   setActionButtonsState("ready");
@@ -270,7 +350,7 @@ function resetShiftPanel() {
 function clearEmployeeForm() {
   document.getElementById("inputNip").value = "";
   document.getElementById("inputNama").value = "";
-  lastResolvedNip = "";
+  lastResolvedKey = "";
   lastNotifiedActiveId = "";
   localStorage.removeItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP);
   resetShiftPanel();
@@ -289,21 +369,23 @@ async function processAttendance(type) {
   const todayStr = getTodayDateISO();
 
   if (type === "checkin") {
-    // Sinkronisasi terakhir ke Google Sheets sebelum menyimpan Check In agar tidak bentrok antar device
+    // Verifikasi real-time terakhir ke Google Sheets sebelum membuat catatan Check In baru
     if (typeof DataService !== "undefined" && DataService.getActiveSheetUrl()) {
-      document.getElementById("nipLookupSpinner").classList.remove("hidden");
+      const spinner = document.getElementById("nipLookupSpinner");
+      if (spinner) spinner.classList.remove("hidden");
       const latest = await DataService.fetchAllRecords();
       attendanceRecords = latest.records || attendanceRecords;
-      document.getElementById("nipLookupSpinner").classList.add("hidden");
+      if (spinner) spinner.classList.add("hidden");
     }
 
     const activeExisting = attendanceRecords.find(
-      r => String(r.nip) === String(nip) && r.date === todayStr && r.status === "Sedang Bekerja"
+      r => (String(r.nip).trim() === nip || String(r.name).trim().toLowerCase() === name.toLowerCase()) && r.status === "Sedang Bekerja"
     );
+
     if (activeExisting) {
       lastNotifiedActiveId = activeExisting.id;
-      evaluateNipStatus(nip, false);
-      showToast(`Gagal Check In: Anda belum Check Out dari sesi pukul ${activeExisting.checkInTime} WIB di perangkat sebelumnya.`, "warning");
+      evaluateEmployeeStatus({ nip: activeExisting.nip, name: activeExisting.name, notifyIfActive: false, autoFillPair: true });
+      showToast(`Belum Check Out: ${activeExisting.name} (${activeExisting.nip}) tercatat aktif sejak pukul ${activeExisting.checkInTime} WIB.`, "warning");
       return;
     }
 
@@ -328,19 +410,26 @@ async function processAttendance(type) {
     attendanceRecords.unshift(newRecord);
     DataService.saveLocalRecords(attendanceRecords);
     localStorage.setItem(APP_CONFIG.STORAGE_KEYS.LAST_NIP, nip);
-    lastResolvedNip = nip;
+    lastResolvedKey = `nip:${nip}`;
     lastNotifiedActiveId = newRecord.id;
 
-    evaluateNipStatus(nip, false);
+    evaluateEmployeeStatus({ nip, name, notifyIfActive: false, autoFillPair: false });
     showToast(`Check In berhasil pukul ${timeFormatted} WIB`, "success");
 
     await DataService.pushRecord(newRecord);
   } else if (type === "checkout") {
+    // Pastikan data terbaru termuat jika user langsung menekan Check Out dari device lain
+    if (typeof DataService !== "undefined" && DataService.getActiveSheetUrl()) {
+      const latest = await DataService.fetchAllRecords();
+      attendanceRecords = latest.records || attendanceRecords;
+    }
+
     const idx = attendanceRecords.findIndex(
-      r => String(r.nip) === String(nip) && r.date === todayStr && r.status === "Sedang Bekerja"
+      r => (String(r.nip).trim() === nip || String(r.name).trim().toLowerCase() === name.toLowerCase()) && r.status === "Sedang Bekerja"
     );
     if (idx === -1) {
-      showToast("Data Check In aktif hari ini tidak ditemukan.", "error");
+      showToast("Data Check In aktif tidak ditemukan atau sudah Check Out sebelumnya.", "error");
+      evaluateEmployeeStatus({ nip, name, notifyIfActive: false, autoFillPair: false });
       return;
     }
 
@@ -360,7 +449,7 @@ async function processAttendance(type) {
 
     attendanceRecords[idx] = record;
     DataService.saveLocalRecords(attendanceRecords);
-    evaluateNipStatus(nip, false);
+    evaluateEmployeeStatus({ nip: record.nip, name: record.name, notifyIfActive: false, autoFillPair: false });
     showToast(`Check Out berhasil (${formatMinutesToHm(durationMinutes)}). Form akan bersih otomatis...`, "success");
 
     await DataService.pushRecord(record);
@@ -419,7 +508,10 @@ async function switchView(viewName) {
     adminBtn.classList.remove("hidden");
 
     const currentNip = document.getElementById("inputNip").value.trim();
-    if (currentNip) evaluateNipStatus(currentNip, false);
+    const currentName = document.getElementById("inputNama").value.trim();
+    if (currentNip || currentName) {
+      evaluateEmployeeStatus({ nip: currentNip, name: currentName, notifyIfActive: false, autoFillPair: true });
+    }
   }
 }
 
