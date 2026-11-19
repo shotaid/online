@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PresensiPro — Logika Antarmuka, Timer Shift, & Deteksi Lintas Device
+   PresensiPro — Logika Antarmuka, Siklus Shift Berulang, & Deteksi Lintas Device
    ========================================================================== */
 
 let attendanceRecords = [];
@@ -247,6 +247,7 @@ function evaluateEmployeeStatus({ notifyToast = false, autoFillPair = true } = {
 
   const todayStr = getTodayDateISO();
 
+  // 1. Cari apakah masih ada sesi aktif (BELUM CHECK OUT) untuk NIP atau Nama ini
   let activeSession = null;
   if (cleanNip) {
     activeSession = attendanceRecords.find(
@@ -267,6 +268,7 @@ function evaluateEmployeeStatus({ notifyToast = false, autoFillPair = true } = {
     }
   }
 
+  // Lengkapi pasangan input yang masih kosong dari riwayat
   if (!activeSession && autoFillPair) {
     if (cleanNip && !cleanNameLower) {
       const histByNip = [...attendanceRecords].reverse().find(r => String(r.nip).trim() === cleanNip);
@@ -284,6 +286,7 @@ function evaluateEmployeeStatus({ notifyToast = false, autoFillPair = true } = {
 
   card.classList.remove("hidden", "bg-blue-50/70", "border-blue-200", "bg-amber-50", "border-amber-400", "bg-emerald-50/70", "border-emerald-200");
 
+  // KONDISI 1: MASIH AKTIF / BELUM CHECK OUT -> Kunci Check In, Wajib Check Out dulu
   if (activeSession) {
     activeShiftRecord = activeSession;
 
@@ -309,26 +312,30 @@ function evaluateEmployeeStatus({ notifyToast = false, autoFillPair = true } = {
     return;
   }
 
+  // KONDISI 2: SEMUA SESI SEBELUMNYA SUDAH CHECK OUT -> Tampilkan ringkasan sesi terakhir & aktifkan Check In lagi
   const resolvedNipNow = inputNipEl.value.trim();
-  const completedToday = resolvedNipNow
-    ? [...attendanceRecords].reverse().find(
+  const completedSessionsToday = resolvedNipNow
+    ? attendanceRecords.filter(
         r => String(r.nip).trim() === resolvedNipNow && r.date === todayStr && !isRecordActive(r)
       )
-    : null;
+    : [];
 
-  if (completedToday) {
-    activeShiftRecord = completedToday;
-    document.getElementById("displayCheckInTime").textContent = completedToday.checkInTime;
+  if (completedSessionsToday.length > 0) {
+    const latestCompleted = completedSessionsToday[0];
+    activeShiftRecord = latestCompleted;
+    lastNotifiedActiveId = "";
+    document.getElementById("displayCheckInTime").textContent = latestCompleted.checkInTime;
 
     card.classList.add("bg-emerald-50/70", "border-emerald-200");
     badge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white";
-    badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> Sudah Check Out (${completedToday.checkOutTime}) — Siap Shift Baru`;
+    badge.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${completedSessionsToday.length} Sesi Selesai (${latestCompleted.checkOutTime}) — Siap Check In Lagi`;
 
     setActionButtonsState("ready");
     updateActiveShiftTimer();
     return;
   }
 
+  // KONDISI 3: BELUM ADA ABSENSI HARI INI -> Siap Check In
   activeShiftRecord = null;
   lastNotifiedActiveId = "";
   card.classList.add("hidden");
@@ -353,7 +360,7 @@ function clearEmployeeForm() {
   resetShiftPanel();
 }
 
-// ==================== PROSES CHECK IN & CHECK OUT ====================
+// ==================== PROSES CHECK IN & CHECK OUT BERULANG ====================
 async function processAttendance(type) {
   if (isProcessingAttendance) return;
 
@@ -383,7 +390,7 @@ async function processAttendance(type) {
     const todayStr = getTodayDateISO();
     const standardMins = typeof APP_CONFIG !== "undefined" ? APP_CONFIG.STANDARD_WORK_MINUTES : 540;
 
-    // Sinkronisasi cepat dengan batas waktu 4 detik agar tombol tidak macet
+    // Sinkronisasi cepat dari Cloud sebelum keputusan Check In / Check Out
     const latest = await fetchCloudWithTimeout(4000);
     if (latest && Array.isArray(latest.records)) {
       attendanceRecords = latest.records;
@@ -391,6 +398,7 @@ async function processAttendance(type) {
     }
 
     if (type === "checkin") {
+      // Hanya blokir jika masih ada sesi aktif yang BELUM Check Out
       const activeExisting = attendanceRecords.find(
         r =>
           (String(r.nip).trim() === nip ||
@@ -412,6 +420,7 @@ async function processAttendance(type) {
       const nowTs = now.getTime();
       const timeFormatted = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
+      // Buat ID unik dengan timestamp sehingga sesi ke-2, ke-3, dst. tercatat sebagai baris terpisah
       const newRecord = {
         id: `${todayStr}_${nip}_${nowTs}`,
         date: todayStr,
@@ -439,7 +448,7 @@ async function processAttendance(type) {
       showToast(`Check In berhasil pukul ${timeFormatted} WIB`, "success");
 
       if (typeof DataService !== "undefined") {
-        DataService.pushRecord(newRecord);
+        await DataService.pushRecord(newRecord);
       }
     } else if (type === "checkout") {
       const idx = attendanceRecords.findIndex(
@@ -475,15 +484,16 @@ async function processAttendance(type) {
       }
 
       evaluateEmployeeStatus({ notifyToast: false, autoFillPair: false });
-      showToast(`Check Out berhasil (${formatMinutesToHm(durationMinutes)}). Form akan bersih otomatis...`, "success");
+      showToast(`Check Out berhasil (${formatMinutesToHm(durationMinutes)}). Siap untuk Check In berikutnya...`, "success");
 
       if (typeof DataService !== "undefined") {
-        DataService.pushRecord(record);
+        await DataService.pushRecord(record);
       }
 
+      // Bersihkan input setelah 2 detik agar pegawai langsung bisa Check In ulang bila diperlukan
       checkoutResetTimer = setTimeout(() => {
         clearEmployeeForm();
-      }, 2500);
+      }, 2000);
     }
   } catch (error) {
     console.error("Error saat memproses absensi:", error);
