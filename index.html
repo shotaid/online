@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#002855" />
+  <meta name="theme-color" content="#FFFFFF" />
   <title>Titik Hadir — Sistem Absensi & Lembur Online</title>
 
   <!-- Tailwind CSS & Font Awesome -->
@@ -22,51 +22,58 @@
   <!-- Custom CSS -->
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
+<body class="bg-white text-slate-800 min-h-screen flex flex-col">
 
-  <!-- HEADER KORPORAT -->
-  <header class="mandiri-header text-white sticky top-0 z-40 shadow-lg">
+  <!-- HEADER PUTIH KORPORAT -->
+  <header class="mandiri-header sticky top-0 z-40 shadow-sm">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
+      <!-- Brand Logo: Titik Hadir -->
       <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('employee')">
-        <div class="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center relative overflow-hidden">
+        <div class="w-10 h-10 rounded-xl bg-[#003D79] border border-[#002855] flex items-center justify-center relative overflow-hidden shadow-sm">
           <div class="mandiri-ribbon-slash"></div>
-          <i class="fa-solid fa-fingerprint text-[#FFB700] text-lg relative z-10"></i>
+          <i class="fa-solid fa-location-dot text-[#FFB700] text-lg relative z-10"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="font-extrabold text-base sm:text-lg tracking-tight leading-none">Titik Hadir<span class="text-[#FFB700]">Pro</span></h1>
-            <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-[#FFB700]/20 text-[#FFB700] border border-[#FFB700]/30">Enterprise</span>
+            <h1 class="font-extrabold text-base sm:text-lg tracking-tight leading-none text-[#002855]">
+              Titik <span class="text-[#0072CE]">Hadir</span>
+            </h1>
+            <span class="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-[#002855] border border-amber-300">Online</span>
           </div>
-          <p class="text-[11px] text-blue-200 mt-0.5">Sistem Kehadiran & Kalkulasi Lembur</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">Sistem Kehadiran & Kalkulasi Lembur</p>
         </div>
       </div>
 
+      <!-- Kontrol Navigasi Kanan -->
       <div class="flex items-center gap-2 sm:gap-3">
-        <div id="syncBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/15">
+        <div id="syncBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 border border-slate-200 text-slate-700">
           <span id="syncDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
-          <span id="syncText" class="hidden sm:inline text-blue-100">Mode Lokal</span>
+          <span id="syncText" class="hidden sm:inline">Mode Lokal</span>
         </div>
 
-        <button type="button" id="headerBackHomeBtn" onclick="switchView('employee')" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FFB700] hover:bg-amber-400 text-[#002855] font-bold text-xs sm:text-sm shadow transition active:scale-95">
+        <button type="button" id="headerBackHomeBtn" onclick="switchView('employee')" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FFB700] hover:bg-amber-400 text-[#002855] font-bold text-xs sm:text-sm shadow-sm transition active:scale-95">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Halaman Utama</span>
         </button>
 
-        <button type="button" id="adminNavBtn" onclick="openAdminGate()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs sm:text-sm transition active:scale-95">
+        <button type="button" id="adminNavBtn" onclick="openAdminGate()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white font-semibold text-xs sm:text-sm shadow-sm transition active:scale-95">
           <i class="fa-solid fa-user-shield text-[#FFB700]"></i>
           <span class="hidden sm:inline">Admin</span>
         </button>
       </div>
     </div>
+    <!-- Pita Aksen Biru-Emas Mandiri -->
     <div class="mandiri-accent-bar"></div>
   </header>
 
-  <!-- KONTEN UTAMA -->
+  <!-- KONTEN UTAMA (LATAR PUTIH) -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
     <!-- ==================== HALAMAN PEGAWAI ==================== -->
     <section id="employeeView" class="max-w-xl mx-auto space-y-5">
-      <div class="mandiri-clock-card rounded-2xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
+      
+      <!-- Banner Jam Digital Real-Time -->
+      <div class="mandiri-clock-card rounded-2xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden">
         <div class="mandiri-wave-bg"></div>
         <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -82,7 +89,8 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-2xl shadow-md border border-slate-200/80 p-5 sm:p-7 space-y-5">
+      <!-- Kartu Form Presensi di atas Latar Putih -->
+      <div class="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,40,85,0.07)] border border-slate-200 p-5 sm:p-7 space-y-5">
         <div class="border-b border-slate-100 pb-4">
           <h2 class="text-lg sm:text-xl font-bold text-[#002855]">Formulir Presensi Kehadiran</h2>
           <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Masukkan NIP atau Nama untuk memuat status shift otomatis.</p>
@@ -104,7 +112,7 @@
                 autocomplete="off"
                 placeholder="Contoh: 1995081701"
                 oninput="handleNipLookup()"
-                class="w-full pl-10 pr-10 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-mono font-semibold text-slate-800 transition"
+                class="w-full pl-10 pr-10 py-3 text-base rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-mono font-semibold text-slate-800 transition"
               />
               <span id="nipLookupSpinner" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#003D79]">
                 <i class="fa-solid fa-circle-notch fa-spin"></i>
@@ -126,12 +134,13 @@
                 autocomplete="name"
                 oninput="handleNameLookup()"
                 placeholder="Masukkan nama lengkap Anda"
-                class="w-full pl-10 pr-4 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-medium text-slate-800 transition"
+                class="w-full pl-10 pr-4 py-3 text-base rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-medium text-slate-800 transition"
               />
             </div>
           </div>
         </div>
 
+        <!-- Kartu Status Shift -->
         <div id="shiftStatusCard" class="hidden rounded-xl border p-4 space-y-3 transition-all">
           <div class="flex items-center justify-between gap-2 flex-wrap">
             <span id="shiftBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"></span>
@@ -139,11 +148,11 @@
           </div>
 
           <div class="grid grid-cols-2 gap-3 pt-1">
-            <div class="bg-white/80 rounded-lg p-3 border border-slate-200/70">
+            <div class="bg-white rounded-lg p-3 border border-slate-200/80">
               <div class="text-[11px] font-semibold text-slate-500 uppercase">Durasi Berjalan</div>
               <div id="liveDurationTimer" class="font-mono text-lg sm:text-xl font-bold text-[#002855] mt-0.5">00:00:00</div>
             </div>
-            <div class="bg-white/80 rounded-lg p-3 border border-slate-200/70">
+            <div class="bg-white rounded-lg p-3 border border-slate-200/80">
               <div class="text-[11px] font-semibold text-slate-500 uppercase">Estimasi Lembur</div>
               <div id="liveOvertimeTimer" class="font-mono text-lg sm:text-xl font-bold text-amber-600 mt-0.5">0j 0m</div>
             </div>
@@ -160,6 +169,7 @@
           </div>
         </div>
 
+        <!-- Tombol Check In & Check Out -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           <button
             type="button"
@@ -201,7 +211,7 @@
             <span>Kembali</span>
           </button>
           <div>
-            <h2 class="text-lg sm:text-xl font-extrabold text-[#002855]">Dashboard Rekapitulasi Absensi</h2>
+            <h2 class="text-lg sm:text-xl font-extrabold text-[#002855]">Dashboard Rekapitulasi Titik Hadir</h2>
             <p class="text-xs text-slate-500">Pemantauan waktu kerja (9 jam/hari), lembur bulanan, dan ekspor laporan.</p>
           </div>
         </div>
@@ -230,7 +240,7 @@
         </div>
       </div>
 
-      <!-- ==================== PANEL REKAPITULASI BULANAN ==================== -->
+      <!-- PANEL REKAPITULASI BULANAN -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-100 pb-4">
           <div class="flex items-center gap-2.5">
@@ -244,14 +254,12 @@
           </div>
 
           <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <!-- Pilih Bulan -->
             <input
               type="month"
               id="monthlyFilterMonth"
               onchange="renderMonthlyRecap()"
               class="px-3.5 py-2 text-base sm:text-sm rounded-xl border border-slate-300 focus:border-[#003D79] outline-none bg-white font-medium"
             />
-            <!-- Pilih Semua Pegawai atau Per Pegawai -->
             <select
               id="monthlyEmployeeSelect"
               onchange="renderMonthlyRecap()"
@@ -262,7 +270,6 @@
           </div>
         </div>
 
-        <!-- Hasil Perhitungan Bulanan -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div class="rounded-xl bg-blue-50/70 border border-blue-200/80 p-4">
             <div id="monthlyCard1Label" class="text-[11px] font-bold uppercase text-[#003D79]">Jumlah Pegawai Aktif</div>
@@ -365,7 +372,7 @@
 
   </main>
 
-  <!-- FOOTER -->
+  <!-- FOOTER PUTIH BERSIH -->
   <footer class="bg-white border-t border-slate-200 py-4 px-4 mt-auto">
     <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
       <div>&copy; <span id="footerYear"></span> <strong>Titik Hadir</strong>. Sistem Absensi Online.</div>
