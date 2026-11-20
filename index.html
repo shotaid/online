@@ -27,7 +27,6 @@
   <!-- HEADER KORPORAT -->
   <header class="mandiri-header text-white sticky top-0 z-40 shadow-lg">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-2">
-      <!-- Brand Logo -->
       <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('employee')">
         <div class="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center relative overflow-hidden">
           <div class="mandiri-ribbon-slash"></div>
@@ -42,38 +41,31 @@
         </div>
       </div>
 
-      <!-- Right Navigation Controls -->
       <div class="flex items-center gap-2 sm:gap-3">
-        <!-- Indikator Status Cloud Sync -->
         <div id="syncBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-white/10 border border-white/15">
           <span id="syncDot" class="w-2 h-2 rounded-full bg-amber-400"></span>
           <span id="syncText" class="hidden sm:inline text-blue-100">Mode Lokal</span>
         </div>
 
-        <!-- Tombol Kembali ke Halaman Utama (Muncul saat di Dashboard Admin) -->
-        <button id="headerBackHomeBtn" onclick="switchView('employee')" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FFB700] hover:bg-amber-400 text-[#002855] font-bold text-xs sm:text-sm shadow transition active:scale-95">
+        <button type="button" id="headerBackHomeBtn" onclick="switchView('employee')" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-[#FFB700] hover:bg-amber-400 text-[#002855] font-bold text-xs sm:text-sm shadow transition active:scale-95">
           <i class="fa-solid fa-arrow-left"></i>
           <span>Halaman Utama</span>
         </button>
 
-        <!-- Tombol Akses Admin -->
-        <button id="adminNavBtn" onclick="openAdminGate()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs sm:text-sm transition active:scale-95">
+        <button type="button" id="adminNavBtn" onclick="openAdminGate()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs sm:text-sm transition active:scale-95">
           <i class="fa-solid fa-user-shield text-[#FFB700]"></i>
           <span class="hidden sm:inline">Admin</span>
         </button>
       </div>
     </div>
-    <!-- Pita Aksen Emas-Biru -->
     <div class="mandiri-accent-bar"></div>
   </header>
 
   <!-- KONTEN UTAMA -->
   <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
-    <!-- ==================== HALAMAN PEGAWAI (CHECK IN / CHECK OUT) ==================== -->
+    <!-- ==================== HALAMAN PEGAWAI ==================== -->
     <section id="employeeView" class="max-w-xl mx-auto space-y-5">
-      
-      <!-- Banner Jam Digital Real-Time -->
       <div class="mandiri-clock-card rounded-2xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden">
         <div class="mandiri-wave-bg"></div>
         <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -90,15 +82,13 @@
         </div>
       </div>
 
-      <!-- Kartu Form Presensi -->
       <div class="bg-white rounded-2xl shadow-md border border-slate-200/80 p-5 sm:p-7 space-y-5">
         <div class="border-b border-slate-100 pb-4">
           <h2 class="text-lg sm:text-xl font-bold text-[#002855]">Formulir Presensi Kehadiran</h2>
-          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Masukkan NIP untuk memuat status shift otomatis hari ini.</p>
+          <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Masukkan NIP atau Nama untuk memuat status shift otomatis.</p>
         </div>
 
         <div class="space-y-4">
-          <!-- Input NIP -->
           <div>
             <label for="inputNip" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
               Nomor Induk Pegawai (NIP) <span class="text-red-500">*</span>
@@ -108,20 +98,20 @@
                 <i class="fa-solid fa-id-badge"></i>
               </span>
               <input
-  type="text"
-  id="inputNama"
-  autocomplete="name"
-  oninput="handleNameLookup()"
-  placeholder="Masukkan nama lengkap Anda"
-  class="w-full pl-10 pr-4 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-medium text-slate-800 transition"
-/>
+                type="text"
+                id="inputNip"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="Contoh: 1995081701"
+                oninput="handleNipLookup()"
+                class="w-full pl-10 pr-10 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-mono font-semibold text-slate-800 transition"
+              />
               <span id="nipLookupSpinner" class="hidden absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#003D79]">
                 <i class="fa-solid fa-circle-notch fa-spin"></i>
               </span>
             </div>
           </div>
 
-          <!-- Input Nama Lengkap -->
           <div>
             <label for="inputNama" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">
               Nama Lengkap <span class="text-red-500">*</span>
@@ -134,6 +124,7 @@
                 type="text"
                 id="inputNama"
                 autocomplete="name"
+                oninput="handleNameLookup()"
                 placeholder="Masukkan nama lengkap Anda"
                 class="w-full pl-10 pr-4 py-3 text-base rounded-xl border border-slate-300 focus:border-[#003D79] focus:ring-2 focus:ring-[#003D79]/20 outline-none font-medium text-slate-800 transition"
               />
@@ -141,9 +132,8 @@
           </div>
         </div>
 
-        <!-- Panel Status Shift Aktif / Selesai (Dinamis) -->
         <div id="shiftStatusCard" class="hidden rounded-xl border p-4 space-y-3 transition-all">
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
             <span id="shiftBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"></span>
             <span class="text-xs text-slate-500 font-medium">Check-In: <strong id="displayCheckInTime" class="font-mono text-slate-800">--:--</strong></span>
           </div>
@@ -159,7 +149,6 @@
             </div>
           </div>
 
-          <!-- Progress Bar Target 9 Jam -->
           <div>
             <div class="flex justify-between text-[11px] font-semibold text-slate-500 mb-1">
               <span>Progres Wajib (9 Jam)</span>
@@ -171,9 +160,9 @@
           </div>
         </div>
 
-        <!-- Tombol Aksi Check In & Check Out -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
           <button
+            type="button"
             id="btnCheckIn"
             onclick="processAttendance('checkin')"
             class="btn-mandiri-primary py-3.5 px-5 rounded-xl font-bold text-sm sm:text-base text-white shadow-md flex items-center justify-center gap-2 transition active:scale-95 disabled:opacity-45 disabled:cursor-not-allowed"
@@ -183,6 +172,7 @@
           </button>
 
           <button
+            type="button"
             id="btnCheckOut"
             onclick="processAttendance('checkout')"
             disabled
@@ -194,7 +184,6 @@
         </div>
       </div>
 
-      <!-- Catatan Informasi Perangkat -->
       <div class="text-center text-xs text-slate-500 px-2">
         <i class="fa-solid fa-shield-halved text-[#003D79] mr-1"></i>
         Timer shift tersimpan otomatis di awan meski aplikasi ditutup. Kompatibel di Desktop, Android & iOS.
@@ -207,42 +196,106 @@
       <!-- Top Bar Admin -->
       <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div class="flex items-start sm:items-center gap-3">
-          <button onclick="switchView('employee')" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#002855] font-bold text-xs sm:text-sm flex items-center gap-1.5 transition shrink-0">
+          <button type="button" onclick="switchView('employee')" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#002855] font-bold text-xs sm:text-sm flex items-center gap-1.5 transition shrink-0">
             <i class="fa-solid fa-arrow-left"></i>
             <span>Kembali</span>
           </button>
           <div>
             <h2 class="text-lg sm:text-xl font-extrabold text-[#002855]">Dashboard Rekapitulasi Absensi</h2>
-            <p class="text-xs text-slate-500">Pemantauan waktu kerja (9 jam/hari), lembur, dan ekspor laporan.</p>
+            <p class="text-xs text-slate-500">Pemantauan waktu kerja (9 jam/hari), lembur bulanan, dan ekspor laporan.</p>
           </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-          <button onclick="syncFromCloud(true)" class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003D79] border border-blue-200 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+          <button type="button" onclick="syncFromCloud(true)" class="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#003D79] border border-blue-200 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
             <i id="refreshIcon" class="fa-solid fa-arrows-rotate"></i>
-            <span>Refresh Data</span>
+            <span>Refresh</span>
           </button>
-          <button onclick="openSheetModal()" class="px-3.5 py-2 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+          <button type="button" onclick="openChangePinModal()" class="px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-key text-amber-600"></i>
+            <span>Ubah PIN</span>
+          </button>
+          <button type="button" onclick="openSheetModal()" class="px-3.5 py-2 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
             <i class="fa-solid fa-table text-[#FFB700]"></i>
             <span>Sync Google Sheets</span>
           </button>
-          <button onclick="exportData('xlsx')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+          <button type="button" onclick="exportData('xlsx')" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
             <i class="fa-solid fa-file-excel"></i>
-            <span>Excel (.xlsx)</span>
+            <span>Excel</span>
           </button>
-          <button onclick="exportData('csv')" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
+          <button type="button" onclick="exportData('csv')" class="px-3.5 py-2 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition">
             <i class="fa-solid fa-file-csv"></i>
             <span>CSV</span>
           </button>
         </div>
       </div>
 
-      <!-- Kartu Ringkasan KPI -->
+      <!-- ==================== PANEL REKAPITULASI BULANAN ==================== -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-100 pb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-[#003D79] text-[#FFB700] flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-calendar-check"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-base text-[#002855]">Kalkulator Rekap Bulanan & Lembur</h3>
+              <p class="text-xs text-slate-500">Hitung jumlah pegawai dan akumulasi jam lembur per bulan (Semua atau Per Pegawai).</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <!-- Pilih Bulan -->
+            <input
+              type="month"
+              id="monthlyFilterMonth"
+              onchange="renderMonthlyRecap()"
+              class="px-3.5 py-2 text-base sm:text-sm rounded-xl border border-slate-300 focus:border-[#003D79] outline-none bg-white font-medium"
+            />
+            <!-- Pilih Semua Pegawai atau Per Pegawai -->
+            <select
+              id="monthlyEmployeeSelect"
+              onchange="renderMonthlyRecap()"
+              class="px-3.5 py-2 text-base sm:text-sm rounded-xl border border-slate-300 focus:border-[#003D79] outline-none bg-white font-semibold text-[#002855] min-w-[210px]"
+            >
+              <option value="ALL">Semua Pegawai (Total)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Hasil Perhitungan Bulanan -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div class="rounded-xl bg-blue-50/70 border border-blue-200/80 p-4">
+            <div id="monthlyCard1Label" class="text-[11px] font-bold uppercase text-[#003D79]">Jumlah Pegawai Aktif</div>
+            <div id="monthlyUniqueEmployees" class="text-2xl sm:text-3xl font-extrabold text-[#002855] mt-1">0</div>
+            <div id="monthlyCard1Sub" class="text-[11px] text-slate-500 mt-0.5">Pegawai unik bulan terpilih</div>
+          </div>
+
+          <div class="rounded-xl bg-slate-50 border border-slate-200 p-4">
+            <div class="text-[11px] font-bold uppercase text-slate-600">Total Kehadiran / Shift</div>
+            <div id="monthlyTotalSessions" class="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1">0</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Jumlah sesi tercatat</div>
+          </div>
+
+          <div class="rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-4">
+            <div class="text-[11px] font-bold uppercase text-emerald-800">Total Jam Kerja</div>
+            <div id="monthlyTotalWorkHours" class="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1">0j 0m</div>
+            <div class="text-[11px] text-slate-500 mt-0.5">Akumulasi durasi kerja</div>
+          </div>
+
+          <div class="rounded-xl bg-amber-50/90 border border-amber-300 p-4">
+            <div class="text-[11px] font-bold uppercase text-amber-800">Total Jam Lembur</div>
+            <div id="monthlyTotalOvertime" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">0j 0m</div>
+            <div id="monthlyOvertimeDecimal" class="text-[11px] text-amber-700 font-semibold mt-0.5">0.00 jam lembur</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kartu Ringkasan KPI Harian/Filter Tabel -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 border-t-4 border-t-[#003D79]">
-          <div class="text-xs font-semibold text-slate-500 uppercase">Total Catatan</div>
+          <div class="text-xs font-semibold text-slate-500 uppercase">Total Catatan Tabel</div>
           <div id="kpiTotal" class="text-2xl sm:text-3xl font-extrabold text-[#002855] mt-1">0</div>
-          <div class="text-[11px] text-slate-400 mt-1">Sesuai filter aktif</div>
+          <div class="text-[11px] text-slate-400 mt-1">Sesuai filter tabel bawah</div>
         </div>
         <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 border-t-4 border-t-[#0072CE]">
           <div class="text-xs font-semibold text-slate-500 uppercase">Sedang Bekerja</div>
@@ -255,9 +308,9 @@
           <div class="text-[11px] text-slate-400 mt-1">Sudah Check Out</div>
         </div>
         <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 border-t-4 border-t-[#FFB700]">
-          <div class="text-xs font-semibold text-slate-500 uppercase">Total Lembur</div>
+          <div class="text-xs font-semibold text-slate-500 uppercase">Lembur (Filter Tabel)</div>
           <div id="kpiOvertime" class="text-2xl sm:text-3xl font-extrabold text-amber-600 mt-1">0j 0m</div>
-          <div class="text-[11px] text-slate-400 mt-1">Akumulasi kelebihan 9 jam</div>
+          <div class="text-[11px] text-slate-400 mt-1">Kelebihan 9 jam</div>
         </div>
       </div>
 
@@ -283,7 +336,7 @@
               onchange="renderAdminTable()"
               class="px-3.5 py-2.5 text-base sm:text-sm rounded-xl border border-slate-300 focus:border-[#003D79] outline-none bg-white"
             />
-            <button onclick="resetAdminFilter()" class="px-3 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-600">
+            <button type="button" onclick="resetAdminFilter()" class="px-3 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-semibold text-slate-600">
               Semua Tanggal
             </button>
           </div>
@@ -304,9 +357,7 @@
                 <th class="py-3.5 px-4 font-semibold text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody id="adminTableBody" class="divide-y divide-slate-200 text-sm">
-              <!-- Diisi via JavaScript -->
-            </tbody>
+            <tbody id="adminTableBody" class="divide-y divide-slate-200 text-sm"></tbody>
           </table>
         </div>
       </div>
@@ -322,7 +373,7 @@
     </div>
   </footer>
 
-  <!-- ==================== MODAL PIN ADMIN ==================== -->
+  <!-- ==================== MODAL LOGIN PIN ADMIN ==================== -->
   <div id="adminPinModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
       <div class="flex items-center justify-between">
@@ -332,7 +383,7 @@
           </div>
           <h3 class="font-bold text-base text-[#002855]">Akses Dashboard Admin</h3>
         </div>
-        <button onclick="closeAdminGate()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <button type="button" onclick="closeAdminGate()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <p class="text-xs text-slate-500">Masukkan PIN Admin untuk melihat seluruh catatan kehadiran dan laporan lembur.</p>
       <input
@@ -345,8 +396,46 @@
         class="w-full text-center tracking-[0.5em] font-mono text-xl py-3 rounded-xl border border-slate-300 focus:border-[#003D79] outline-none"
       />
       <div class="flex gap-2 pt-1">
-        <button onclick="closeAdminGate()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
-        <button onclick="verifyAdminPin()" class="flex-1 py-2.5 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white text-sm font-bold">Masuk</button>
+        <button type="button" onclick="closeAdminGate()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+        <button type="button" onclick="verifyAdminPin()" class="flex-1 py-2.5 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white text-sm font-bold">Masuk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL UBAH PIN ADMIN ==================== -->
+  <div id="changePinModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-[#002855]">Ubah PIN Admin</h3>
+            <p class="text-[11px] text-slate-500">Gunakan 4–6 digit angka baru</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeChangePinModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">PIN Lama</label>
+          <input type="password" id="oldPinInput" inputmode="numeric" maxlength="6" placeholder="Masukkan PIN saat ini" class="w-full px-3.5 py-2.5 font-mono text-base rounded-xl border border-slate-300 focus:border-[#003D79] outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">PIN Baru (4–6 digit angka)</label>
+          <input type="password" id="newPinInput" inputmode="numeric" maxlength="6" placeholder="Contoh: 889900" class="w-full px-3.5 py-2.5 font-mono text-base rounded-xl border border-slate-300 focus:border-[#003D79] outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Konfirmasi PIN Baru</label>
+          <input type="password" id="confirmNewPinInput" inputmode="numeric" maxlength="6" placeholder="Ulangi PIN baru" onkeydown="if(event.key==='Enter') saveNewAdminPin()" class="w-full px-3.5 py-2.5 font-mono text-base rounded-xl border border-slate-300 focus:border-[#003D79] outline-none" />
+        </div>
+      </div>
+
+      <div class="flex gap-2 pt-1">
+        <button type="button" onclick="closeChangePinModal()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+        <button type="button" onclick="saveNewAdminPin()" class="flex-1 py-2.5 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white text-sm font-bold">Simpan PIN</button>
       </div>
     </div>
   </div>
@@ -364,7 +453,7 @@
             <p class="text-xs text-slate-500">Sinkronisasi real-time lintas perangkat ke tab sheet <strong>Absensi</strong></p>
           </div>
         </div>
-        <button onclick="closeSheetModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+        <button type="button" onclick="closeSheetModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
       <div class="space-y-2">
@@ -381,7 +470,7 @@
       <div class="space-y-2">
         <div class="flex items-center justify-between">
           <label class="text-xs font-bold uppercase text-slate-600">Kode Google Apps Script (Code.gs)</label>
-          <button onclick="copyAppsScriptCode()" class="text-xs font-bold text-[#003D79] hover:underline flex items-center gap-1">
+          <button type="button" onclick="copyAppsScriptCode()" class="text-xs font-bold text-[#003D79] hover:underline flex items-center gap-1">
             <i class="fa-regular fa-copy"></i> Salin Kode
           </button>
         </div>
@@ -389,8 +478,8 @@
       </div>
 
       <div class="flex flex-wrap justify-end gap-2 pt-2">
-        <button onclick="closeSheetModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50">Tutup</button>
-        <button onclick="saveAndTestSheetUrl()" class="px-5 py-2.5 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white text-xs sm:text-sm font-bold flex items-center gap-2">
+        <button type="button" onclick="closeSheetModal()" class="px-4 py-2.5 rounded-xl border border-slate-300 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50">Tutup</button>
+        <button type="button" onclick="saveAndTestSheetUrl()" class="px-5 py-2.5 rounded-xl bg-[#003D79] hover:bg-[#002855] text-white text-xs sm:text-sm font-bold flex items-center gap-2">
           <i class="fa-solid fa-plug-circle-check text-[#FFB700]"></i>
           <span>Simpan & Tes Koneksi</span>
         </button>
@@ -401,7 +490,7 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
 
-  <!-- MODULAR JAVASCRIPT (URUTAN WAJIB: config -> api -> app) -->
+  <!-- MODULAR JAVASCRIPT -->
   <script src="js/config.js"></script>
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
