@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PresensiPro — Tema Korporat Bank Mandiri & Optimalisasi Mobile
+   Titik Hadir — Tema Korporat Bank Mandiri (Latar Putih Bersih)
    ========================================================================== */
 
 :root {
@@ -10,6 +10,7 @@
 }
 
 body {
+  background-color: #FFFFFF;
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   padding-bottom: env(safe-area-inset-bottom);
   -webkit-tap-highlight-color: transparent;
@@ -19,27 +20,29 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Header Korporat */
+/* Header Putih Bersih dengan Aksen Pita Mandiri */
 .mandiri-header {
-  background: linear-gradient(135deg, var(--mandiri-deep) 0%, var(--mandiri-navy) 100%);
+  background: #FFFFFF;
+  color: var(--mandiri-deep);
   padding-top: max(12px, env(safe-area-inset-top));
+  border-bottom: 1px solid #E2E8F0;
 }
 
 .mandiri-ribbon-slash {
   position: absolute;
   inset: 0;
-  background: linear-gradient(125deg, transparent 40%, rgba(255, 183, 0, 0.22) 55%, rgba(0, 114, 206, 0.3) 75%, transparent 90%);
+  background: linear-gradient(125deg, transparent 35%, rgba(255, 183, 0, 0.28) 55%, rgba(0, 114, 206, 0.25) 75%, transparent 90%);
 }
 
 .mandiri-accent-bar {
   height: 4px;
-  background: linear-gradient(90deg, var(--mandiri-gold) 0%, #FFD24C 45%, var(--mandiri-sky) 100%);
+  background: linear-gradient(90deg, var(--mandiri-navy) 0%, var(--mandiri-sky) 50%, var(--mandiri-gold) 100%);
 }
 
-/* Kartu Jam Digital */
+/* Kartu Jam Digital Navy Mandiri (Kontras di atas Latar Putih) */
 .mandiri-clock-card {
   background: linear-gradient(135deg, var(--mandiri-deep) 0%, var(--mandiri-navy) 65%, #004E9A 100%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(0, 61, 121, 0.15);
 }
 
 .mandiri-wave-bg {
