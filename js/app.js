@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PresensiPro — Logika Antarmuka, Siklus Shift Berulang, & Deteksi Lintas Device
+   PresensiPro — Logika Antarmuka, Rekap Bulanan, & Ubah PIN Admin
    ========================================================================== */
 
 let attendanceRecords = [];
@@ -8,6 +8,19 @@ let lookupDebounceTimer = null;
 let checkoutResetTimer = null;
 let lastNotifiedActiveId = "";
 let isProcessingAttendance = false;
+
+// Helper mengambil PIN Admin aktif (prioritaskan PIN kustom jika pernah diubah)
+function getCurrentAdminPin() {
+  const storageKey =
+    typeof APP_CONFIG !== "undefined" && APP_CONFIG.STORAGE_KEYS.CUSTOM_ADMIN_PIN
+      ? APP_CONFIG.STORAGE_KEYS.CUSTOM_ADMIN_PIN
+      : "presensipro_custom_admin_pin_v1";
+  const savedPin = localStorage.getItem(storageKey);
+  if (savedPin && savedPin.trim().length >= 4) {
+    return savedPin.trim();
+  }
+  return typeof APP_CONFIG !== "undefined" ? APP_CONFIG.ADMIN_PIN : "123456";
+}
 
 // Helper mengambil elemen input NIP & Nama secara fleksibel
 function getFormInputs() {
@@ -93,6 +106,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     codeBoxEl.value = APPS_SCRIPT_TEMPLATE;
   }
 
+  // Set default bulan berjalan pada filter rekap bulanan (YYYY-MM)
+  const monthInput = document.getElementById("monthlyFilterMonth");
+  if (monthInput) {
+    monthInput.value = getTodayDateISO().slice(0, 7);
+  }
+
   const btnIn = document.getElementById("btnCheckIn");
   const btnOut = document.getElementById("btnCheckOut");
   if (btnIn) btnIn.setAttribute("type", "button");
@@ -114,7 +133,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   updateSyncBadge();
 
-  // Sinkronisasi awal dari Google Sheets (maksimal 4 detik)
   const result = await fetchCloudWithTimeout(4000);
   if (result && Array.isArray(result.records)) {
     attendanceRecords = result.records;
@@ -519,7 +537,7 @@ async function processAttendance(type) {
   }
 }
 
-// ==================== NAVIGASI VIEW & DASHBOARD ADMIN ====================
+// ==================== PIN ADMIN & UBAH PIN ====================
 function openAdminGate() {
   const adminView = document.getElementById("adminView");
   if (!adminView || !adminView.classList.contains("hidden")) return;
@@ -535,15 +553,56 @@ function closeAdminGate() {
 
 function verifyAdminPin() {
   const entered = document.getElementById("adminPinInput").value.trim();
-  const validPin = typeof APP_CONFIG !== "undefined" ? APP_CONFIG.ADMIN_PIN : "123456";
+  const validPin = getCurrentAdminPin();
   if (entered === validPin) {
     closeAdminGate();
     switchView("admin");
   } else {
-    showToast("PIN Admin salah! (Default: 123456)", "error");
+    showToast("PIN Admin salah!", "error");
   }
 }
 
+function openChangePinModal() {
+  document.getElementById("oldPinInput").value = "";
+  document.getElementById("newPinInput").value = "";
+  document.getElementById("confirmNewPinInput").value = "";
+  document.getElementById("changePinModal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("oldPinInput").focus(), 100);
+}
+
+function closeChangePinModal() {
+  document.getElementById("changePinModal").classList.add("hidden");
+}
+
+function saveNewAdminPin() {
+  const oldPin = document.getElementById("oldPinInput").value.trim();
+  const newPin = document.getElementById("newPinInput").value.trim();
+  const confirmPin = document.getElementById("confirmNewPinInput").value.trim();
+
+  if (oldPin !== getCurrentAdminPin()) {
+    showToast("PIN lama tidak sesuai.", "error");
+    return;
+  }
+  if (!/^\d{4,6}$/.test(newPin)) {
+    showToast("PIN baru harus terdiri dari 4 hingga 6 digit angka.", "error");
+    return;
+  }
+  if (newPin !== confirmPin) {
+    showToast("Konfirmasi PIN baru tidak cocok.", "error");
+    return;
+  }
+
+  const storageKey =
+    typeof APP_CONFIG !== "undefined" && APP_CONFIG.STORAGE_KEYS.CUSTOM_ADMIN_PIN
+      ? APP_CONFIG.STORAGE_KEYS.CUSTOM_ADMIN_PIN
+      : "presensipro_custom_admin_pin_v1";
+  localStorage.setItem(storageKey, newPin);
+
+  closeChangePinModal();
+  showToast("PIN Admin berhasil diperbarui!", "success");
+}
+
+// ==================== NAVIGASI VIEW & DASHBOARD ADMIN ====================
 async function switchView(viewName) {
   const empView = document.getElementById("employeeView");
   const admView = document.getElementById("adminView");
@@ -558,7 +617,7 @@ async function switchView(viewName) {
     adminBtn.classList.add("hidden");
 
     await syncFromCloud(false);
-    renderAdminTable();
+    refreshAllAdminViews();
   } else {
     admView.classList.add("hidden");
     empView.classList.remove("hidden");
@@ -570,6 +629,12 @@ async function switchView(viewName) {
   }
 }
 
+function refreshAllAdminViews() {
+  populateMonthlyEmployeeFilter();
+  renderMonthlyRecap();
+  renderAdminTable();
+}
+
 async function syncFromCloud(showNotification = true) {
   const icon = document.getElementById("refreshIcon");
   if (icon) icon.classList.add("fa-spin");
@@ -578,7 +643,7 @@ async function syncFromCloud(showNotification = true) {
   if (result && Array.isArray(result.records)) {
     attendanceRecords = result.records;
     updateSyncBadge(result.source);
-    renderAdminTable();
+    refreshAllAdminViews();
     if (showNotification) {
       showToast(
         result.source === "cloud"
@@ -588,7 +653,7 @@ async function syncFromCloud(showNotification = true) {
       );
     }
   } else {
-    renderAdminTable();
+    refreshAllAdminViews();
     if (showNotification) {
       showToast("Menampilkan data lokal (koneksi cloud lambat/offline).", "warning");
     }
@@ -597,6 +662,104 @@ async function syncFromCloud(showNotification = true) {
   if (icon) icon.classList.remove("fa-spin");
 }
 
+// ==================== KALKULATOR REKAP BULANAN (PER PEGAWAI / TOTAL) ====================
+function populateMonthlyEmployeeFilter() {
+  const selectEl = document.getElementById("monthlyEmployeeSelect");
+  if (!selectEl) return;
+
+  const previousValue = selectEl.value || "ALL";
+  const uniqueMap = new Map();
+
+  attendanceRecords.forEach(rec => {
+    const nip = String(rec.nip || "").trim();
+    const name = String(rec.name || "").trim();
+    if (nip && !uniqueMap.has(nip)) {
+      uniqueMap.set(nip, name || nip);
+    }
+  });
+
+  // Urutkan nama pegawai secara alfabetis
+  const sortedEmployees = Array.from(uniqueMap.entries()).sort((a, b) =>
+    a[1].localeCompare(b[1], "id")
+  );
+
+  selectEl.innerHTML = `<option value="ALL">Semua Pegawai (Total)</option>`;
+  sortedEmployees.forEach(([nip, name]) => {
+    const opt = document.createElement("option");
+    opt.value = nip;
+    opt.textContent = `${name} (${nip})`;
+    selectEl.appendChild(opt);
+  });
+
+  if (previousValue === "ALL" || uniqueMap.has(previousValue)) {
+    selectEl.value = previousValue;
+  } else {
+    selectEl.value = "ALL";
+  }
+}
+
+function renderMonthlyRecap() {
+  const monthInput = document.getElementById("monthlyFilterMonth");
+  const selectEl = document.getElementById("monthlyEmployeeSelect");
+  if (!monthInput || !selectEl) return;
+
+  const selectedMonth = monthInput.value || getTodayDateISO().slice(0, 7);
+  const selectedNip = selectEl.value || "ALL";
+  const standardMins = typeof APP_CONFIG !== "undefined" ? APP_CONFIG.STANDARD_WORK_MINUTES : 540;
+
+  // Filter catatan berdasarkan bulan (YYYY-MM) dan pilihan pegawai
+  const monthlyRecords = attendanceRecords.filter(rec => {
+    const recMonth = String(rec.date || "").slice(0, 7);
+    const matchMonth = recMonth === selectedMonth;
+    const matchEmp = selectedNip === "ALL" || String(rec.nip).trim() === selectedNip;
+    return matchMonth && matchEmp;
+  });
+
+  const uniqueNips = new Set();
+  const uniqueDates = new Set();
+  let totalWorkMinutes = 0;
+  let totalOvertimeMinutes = 0;
+
+  monthlyRecords.forEach(rec => {
+    const nip = String(rec.nip || "").trim();
+    if (nip) uniqueNips.add(nip);
+    if (rec.date) uniqueDates.add(rec.date);
+
+    let durMins = Number(rec.durationMinutes) || 0;
+    let otMins = Number(rec.overtimeMinutes) || 0;
+
+    if (isRecordActive(rec)) {
+      durMins = Math.max(0, Math.floor((Date.now() - Number(rec.checkInTs)) / 60000));
+      otMins = Math.max(0, durMins - standardMins);
+    }
+
+    totalWorkMinutes += durMins;
+    totalOvertimeMinutes += otMins;
+  });
+
+  const card1Label = document.getElementById("monthlyCard1Label");
+  const card1Value = document.getElementById("monthlyUniqueEmployees");
+  const card1Sub = document.getElementById("monthlyCard1Sub");
+
+  if (selectedNip === "ALL") {
+    card1Label.textContent = "Jumlah Pegawai";
+    card1Value.textContent = `${uniqueNips.size} Orang`;
+    card1Sub.textContent = `Pegawai unik bulan ${selectedMonth}`;
+  } else {
+    card1Label.textContent = "Hari Hadir Pegawai";
+    card1Value.textContent = `${uniqueDates.size} Hari`;
+    card1Sub.textContent = `Kehadiran bulan ${selectedMonth}`;
+  }
+
+  document.getElementById("monthlyTotalSessions").textContent = `${monthlyRecords.length} Sesi`;
+  document.getElementById("monthlyTotalWorkHours").textContent = formatMinutesToHm(totalWorkMinutes);
+  document.getElementById("monthlyTotalOvertime").textContent = formatMinutesToHm(totalOvertimeMinutes);
+
+  const overtimeDecimal = (totalOvertimeMinutes / 60).toFixed(2);
+  document.getElementById("monthlyOvertimeDecimal").textContent = `${overtimeDecimal} jam lembur`;
+}
+
+// ==================== TABEL RINCIAN HARIAN ADMIN ====================
 function getFilteredRecords() {
   const keyword = (document.getElementById("adminSearchInput").value || "").toLowerCase().trim();
   const dateFilter = document.getElementById("adminDateFilter").value;
@@ -700,7 +863,7 @@ async function deleteRecord(id) {
   if (typeof DataService !== "undefined") {
     DataService.saveLocalRecords(attendanceRecords);
   }
-  renderAdminTable();
+  refreshAllAdminViews();
   showToast("Catatan berhasil dihapus.", "success");
 
   if (typeof DataService !== "undefined") {
@@ -791,7 +954,7 @@ async function saveAndTestSheetUrl() {
   if (result && Array.isArray(result.records)) {
     attendanceRecords = result.records;
     updateSyncBadge(result.source);
-    renderAdminTable();
+    refreshAllAdminViews();
 
     if (result.source === "cloud") {
       closeSheetModal();
