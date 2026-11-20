@@ -16,7 +16,8 @@ const APP_CONFIG = {
   STORAGE_KEYS: {
     RECORDS: "presensipro_records_v2",
     SHEET_URL: "presensipro_sheet_url_v2",
-    LAST_NIP: "presensipro_last_nip_v2"
+    LAST_NIP: "presensipro_last_nip_v2",
+    CUSTOM_ADMIN_PIN: "presensipro_custom_admin_pin_v1"
   }
 };
 
